@@ -258,13 +258,56 @@ EmptyMem(pid){
 ;// Create partial window screenshot //
 TakeScreenshot:
 {
-	winbottomx:=  (SS_WinxPos+SS_WinxSize)
-	winbottomy:=  (SS_WinyPos+SS_WinySize)
 	arect = %SS_WinxPos% , %SS_WinyPos%, %winbottomx%, %winbottomy%
 	file= %A_ScriptDir%\custom.png
 	sc_CaptureScreen(arect, false,file )
+	msgbox Image Saved!
 }
 Return
+
+
+SELECT_SCREENSHOT_AREA: 
+{
+CoordMode, Mouse ,Screen
+  MouseGetPos, MX, MY
+
+  Gui, 5:Color, EEAA99
+  Gui, 5:+Lastfound
+  WinSet, TransColor, EEAA99
+  Gui, 5:-Caption +Border
+
+  Loop
+    {
+      If GetKeyState("LButton", "P")
+        {
+          MouseGetPos, MXend, MYend
+          w := abs(MX - MXend)
+          h := abs(MY - MYend)
+          If ( MX < MXend )
+              X := MX
+          Else
+              X := MXend
+          If ( MY < MYend )
+              Y := MY
+          Else
+              Y := MYend
+          Gui, 5:Show, x%X% y%Y% w%w% h%h%
+        }
+      Else
+          Break
+    }
+  MouseGetPos, MXend, MYend
+  Gui, 5:Destroy
+
+  SS_WinxPos=%MX%
+  SS_WinyPos=%MY%
+  winbottomy=%MYend%
+  winbottomx=%MXend%
+  hotkey, lbutton, off
+gosub TakeScreenshot
+} 
+Return
+
 
 sc_CaptureScreen(aRect = 0, bCursor = False, sFile = "", nQuality = "")
 {
@@ -507,4 +550,239 @@ GDIplus_Stop()
 	#hGDIplusDLL := 0
 }
 
+GDIplus_CaptureScreenRectangle(ByRef @bitmap
+		, _x=0, _y=0
+		, _w=0, _h=0
+		, _hwndWindow=0)
+{
+	local result, bRes, r, hOld
+	local hdcWindow, hdcBuffer, hbmpBuffer
 
+	result := 0
+
+	If (_hwndWindow!=0)
+	{
+		WinGetPos, ,,_w, _h, ahk_id %_hwndWindow%
+		_x =0
+		_y =0
+	}
+	else if (_w < 0 or _h < 0)
+	{
+		_x := 0
+		_y := 0		
+		_w := A_ScreenWidth
+		_h := A_ScreenHeight
+	}
+	
+	If (_hwndWindow = 0)
+		hdcWindow := DllCall("GetDC", "UInt",  _hwndWindow)
+	Else
+		hdcWindow := DllCall("GetWindowDC", "UInt",  _hwndWindow)
+	If (hdcWindow = 0)
+	{
+		result := -1
+		Goto CaptureScreenRectangle_CleanUp
+	}
+	
+	; Create the buffer holding the capture
+	hdcBuffer := DllCall("GDI32.dll\CreateCompatibleDC", "UInt", hdcWindow)
+	If (hdcBuffer = 0)
+	{
+		result := -1
+		Goto CaptureScreenRectangle_CleanUp
+	}
+	hbmpBuffer := DllCall("GDI32.dll\CreateCompatibleBitmap"
+			, "UInt", hdcWindow
+			, "Int", _w
+			, "Int", _h)
+	If (hbmpBuffer = 0)
+	{
+	   result := -1
+		Goto CaptureScreenRectangle_CleanUp
+	}
+	hOld := DllCall("GDI32.dll\SelectObject", "UInt", hdcBuffer, "UInt", hbmpBuffer)
+	If (hOld = 0)
+	{
+		result := -1
+		Goto CaptureScreenRectangle_CleanUp
+	}
+	bRes := DllCall("GDI32.dll\BitBlt"
+			, "UInt", hdcBuffer	; HDC hdcDest
+			, "Int", 0			; nXDest
+			, "Int", 0			; nYDest
+			, "Int", _w			; nWidth
+			, "Int", _h			; nHeight
+			, "UInt", hdcWindow	; HDC hdcSrc
+			, "Int", _x			; nXSrc
+			, "Int", _y			; nYSrc
+			, "UInt", 0x00CC0020)	; DWORD dwRop=SRCCOPY
+	If (!bRes)
+	{
+		result := -1
+		Goto CaptureScreenRectangle_CleanUp
+	}
+
+	r := DllCall("GDIplus.dll\GdipCreateBitmapFromHBITMAP"
+			, "UInt", hbmpBuffer
+			, "UInt", 0
+			, "UInt *", @bitmap)
+	If (r != 0)
+	{
+		result := r
+		Goto CaptureScreenRectangle_CleanUp
+	}
+
+CaptureScreenRectangle_CleanUp:
+	DllCall("GDI32.dll\DeleteObject", "UInt", hbmpBuffer)
+	DllCall("GDI32.dll\DeleteDC", "UInt", hdcBuffer)
+	DllCall("GDI32.dll\ReleaseDC", "UInt", hdcWindow)
+
+	Return result
+}
+
+; Save an image on a file
+GDIplus_SaveImage(_image, _fileName, ByRef @clsidEncoder, ByRef @encoderParams)
+{
+	local r, ufn, encoderAddr
+
+	If @encoderParams = NONE
+		encoderAddr := 0
+	Else
+		encoderAddr := &@encoderParams
+	GetUnicodeString(ufn, _fileName)
+	r := DllCall("GDIplus.dll\GdipSaveImageToFile"
+			, "UInt", _image
+			, "UInt", &ufn
+			, "UInt", &@clsidEncoder
+			, "UInt", encoderAddr)
+	Return r
+}
+
+; Free the memory allocated for an image
+GDIplus_FreeImage(_image)
+{
+	local r
+
+	r := DllCall("GDIplus.dll\GdipDisposeImage"
+			, "UInt", _image)
+	
+	Return r
+}
+
+GDIplus_GetEncoderCLSID(ByRef @encoderCLSID, _mimeType)
+{
+	local r, numEncoders, size, encoders, encoderAddr, sizeImageCodecInfo
+	local addr, mimeTypeAddr, mimeType, codecIdentifierAddr
+
+	; What size do we need?
+	r := DllCall("GDIplus.dll\GdipGetImageEncodersSize"
+			, "UInt *", numEncoders
+			, "UInt *", size)
+
+	; Allocate this size
+	VarSetCapacity(encoders, size, 0)
+	; And get the listing of encoders
+	r := DllCall("GDIplus.dll\GdipGetImageEncoders"
+			, "UInt", numEncoders
+			, "UInt", size
+			, "UInt", &encoders)
+	
+	encoderAddr := &encoders
+
+	sizeImageCodecInfo := 76
+	mimeTypeOffset := 48
+	
+	; Loop through all the codecs
+	codecIdentifierAddr = 0
+	Loop %numEncoders%
+	{
+		addr := encoderAddr + 48
+		mimeTypeAddr := *addr + (*(addr + 1) << 8) +  (*(addr + 2) << 16) + (*(addr + 3) << 24)
+		mimeType := GetAnsiStringFromUnicodePointer(mimeTypeAddr)
+		If (mimeType = _mimeType)
+		{
+			; We found it!
+			codecIdentifierAddr := encoderAddr
+			Break
+		}
+		encoderAddr += sizeImageCodecInfo
+	}
+
+	If (codecIdentifierAddr = 0)
+	{
+		; Not found
+		r := 1	
+	}
+	Else
+	{
+		; Copy the CLSID of the codec
+		VarSetCapacity(@encoderCLSID, #sizeOfCLSID, 0)
+		DllCall("RtlMoveMemory"
+				, "UInt", &@encoderCLSID
+				, "UInt", codecIdentifierAddr
+				, "Int", #sizeOfCLSID)
+	}
+
+	Return r
+}
+
+SetInteger(ByRef @dest, _integer, _offset = 0, _size = 4)
+{
+	Loop %_size%  ; Copy each byte in the integer into the structure as raw binary data.
+	{
+		DllCall("RtlFillMemory"
+				, "UInt", &@dest + _offset + A_Index-1
+				, "UInt", 1
+				, "UChar", (_integer >> 8*(A_Index-1)) & 0xFF)
+	}
+}
+
+; Some API functions require a WCHAR string.
+GetUnicodeString(ByRef @unicodeString, _ansiString)
+{
+	local len
+
+	len := StrLen(_ansiString)
+	VarSetCapacity(@unicodeString, len * 2 + 1, 0)
+
+	; http://msdn.microsoft.com/library/default.asp?url=/library/en-us/intl/unicode_17si.asp
+	DllCall("MultiByteToWideChar"
+			, "UInt", 0             ; CodePage: CP_ACP=0 (current Ansi), CP_UTF7=65000, CP_UTF8=65001
+			, "UInt", 0             ; dwFlags
+			, "Str", _ansiString    ; LPSTR lpMultiByteStr
+			, "Int", len            ; cbMultiByte: -1=null terminated
+			, "UInt", &@unicodeString ; LPCWSTR lpWideCharStr
+			, "Int", len)           ; cchWideChar: 0 to get required size
+}
+
+; Some API functions return a WCHAR string.
+GetAnsiStringFromUnicodePointer(_unicodeStringPt)
+{
+	local len, ansiString
+
+	len := DllCall("lstrlenW", "UInt", _unicodeStringPt)
+	VarSetCapacity(ansiString, len, 0)
+
+	DllCall("WideCharToMultiByte"
+			, "UInt", 0           ; CodePage: CP_ACP=0 (current Ansi), CP_UTF7=65000, CP_UTF8=65001
+			, "UInt", 0           ; dwFlags
+			, "UInt", _unicodeStringPt ; LPCWSTR lpWideCharStr
+			, "Int", len          ; cchWideChar: size in WCHAR values, -1=null terminated
+			, "Str", ansiString   ; LPSTR lpMultiByteStr
+			, "Int", len          ; cbMultiByte: 0 to get required size
+			, "UInt", 0           ; LPCSTR lpDefaultChar
+			, "UInt", 0)          ; LPBOOL lpUsedDefaultChar
+
+	Return ansiString
+}
+
+DisableCloseButton(hWnd="") {
+ If hWnd=
+    hWnd:=WinExist("A")
+ hSysMenu:=DllCall("GetSystemMenu","Int",hWnd,"Int",FALSE)
+ nCnt:=DllCall("GetMenuItemCount","Int",hSysMenu)
+ DllCall("RemoveMenu","Int",hSysMenu,"UInt",nCnt-1,"Uint","0x400")
+ DllCall("RemoveMenu","Int",hSysMenu,"UInt",nCnt-2,"Uint","0x400")
+ DllCall("DrawMenuBar","Int",hWnd)
+Return ""
+}
