@@ -139,10 +139,10 @@ Return
 
 
 settings:
-
-	Gui, Font, S16 CDefault Bold, Verdana
-	Gui, Add, Text, x12 y10 w220 h30 , autoFlix
-	Gui, Font, S12 CDefault normal, Verdana
+	gui,color, b9090b
+	
+	Gui, Add, picture, x30,autoflix.png
+	Gui, Font, S12 cwhite normal, Verdana
 	if startup
 	{
 		Gui, Add, CheckBox, x12 y50 w190 h20 vstartup checked, Run at Startup?
@@ -161,7 +161,7 @@ settings:
 	}
 	gui,add,button,gcustompng, Custom Image
 	gui,add,text,,autoFlix v1.7.5
-	Gui, Add, Button, x92 y185 w80 h20 gsave, Save
+	Gui, Add, Button, x92 y178 w80 h20 gsave, Save
 	Gui, Show, w180 h206, Settings
 Return
 
