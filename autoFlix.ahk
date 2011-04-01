@@ -10,7 +10,7 @@ hotkey, esc, cancel_screenshot
 hotkey, esc, off
 ES_DISPLAY_REQUIRED := 0x00000002
 ;SetTimer, CheckWindowsState, % 1000*30 ; Poll every 30 seconds
-
+version=1.7.6
 
 if not FileExist("autoFlix.ini")
 {
@@ -141,9 +141,10 @@ Return
 
 
 settings:
+	gui, destroy
 	gui,color, b9090b
 	
-	Gui, Add, picture, x30,autoflix.png
+	Gui, Add, picture, x29,autoflix.png
 	Gui, Font, S12 cwhite normal, Verdana
 	if startup
 	{
@@ -162,9 +163,10 @@ settings:
 		Gui, Add, CheckBox, x12 y80 w190 h20 vantisleep , Anti-Sleep Mode
 	}
 	gui,add,button,gcustompng, Custom Image
-	gui,add,text,,autoFlix v1.7.5
+	gui,add,text,,autoFlix v%version%
 	Gui, Add, Button, x92 y178 w80 h20 gsave, Save
 	Gui, Show, w180 h206, Settings
+
 Return
 
 custompng:
