@@ -10,7 +10,7 @@ hotkey, esc, cancel_screenshot
 hotkey, esc, off
 ES_DISPLAY_REQUIRED := 0x00000002
 ;SetTimer, CheckWindowsState, % 1000*30 ; Poll every 30 seconds
-version=1.7.6
+version=1.7.8
 
 if not FileExist("autoFlix.ini")
 {

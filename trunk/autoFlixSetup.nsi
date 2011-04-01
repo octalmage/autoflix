@@ -16,7 +16,7 @@ RequestExecutionLevel admin
 
   ;Name and file
   Name "autoFlix"
-  OutFile "autoFlixSetup1.7.7.exe"
+  OutFile "autoFlixSetup1.7.8.exe"
 
   ;Default installation folder
   InstallDir "$PROGRAMFILES\autoFlix"
@@ -65,9 +65,11 @@ Section "Main" SecDummy
   
   ;ADD YOUR OWN FILES HERE...
   File "autoFlix.exe"
+  File "autoflix.png"
+  File "search.png"
   ;Store installation folder
   WriteRegStr HKCU "Software\autoFlix" "" $INSTDIR
-WriteRegStr HKCU "Software\autoFlix" "version" "1.7.7"
+WriteRegStr HKCU "Software\autoFlix" "version" "1.7.8"
   
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
@@ -113,6 +115,7 @@ Delete "$INSTDIR\autoFlix.exe"
   Delete "$INSTDIR\Uninstall.exe"
 Delete "$INSTDIR\logo.ico"
 Delete "$INSTDIR\search.png"
+Delete "$INSTDIR\autoflix.png"
 Delete "$INSTDIR\autoFlix.ini"
 	
   RMDir "$INSTDIR"
