@@ -1,17 +1,62 @@
+/*
+                 __           ____    ___                  
+                /\ \__       /\  _`\ /\_ \    __           
+   __     __  __\ \ ,_\   ___\ \ \L\_\//\ \  /\_\   __  _  
+ /'__`\  /\ \/\ \\ \ \/  / __`\ \  _\/ \ \ \ \/\ \ /\ \/'\ 
+/\ \L\.\_\ \ \_\ \\ \ \_/\ \L\ \ \ \/   \_\ \_\ \ \\/>  </ 
+\ \__/.\_\\ \____/ \ \__\ \____/\ \_\   /\____\\ \_\/\_/\_\
+ \/__/\/_/ \/___/   \/__/\/___/  \/_/   \/____/ \/_/\//\/_/
+
+-------------------------------
+| Program Settings        |
+-------------------------------
+*/            
+
+#singleinstance force
 SetWorkingDir, %A_ScriptDir%
 SetTitleMatchMode, 2
+CoordMode, Pixel, Screen
+CoordMode, Mouse, Screen
+;PID := DllCall("GetCurrentProcessId")
 
-PID := DllCall("GetCurrentProcessId")
-settitlematchmode, 2
 
+/*
+-------------------------------
+| Hotkeys					   |
+-------------------------------
+*/      
 hotkey, lbutton, SELECT_SCREENSHOT_AREA
 hotkey, lbutton, off
 hotkey, esc, cancel_screenshot
 hotkey, esc, off
-ES_DISPLAY_REQUIRED := 0x00000002
-;SetTimer, CheckWindowsState, % 1000*30 ; Poll every 30 seconds
-version=1.7.8
 
+
+
+/*
+-------------------------------
+| Variables                    |
+-------------------------------
+*/      
+ES_DISPLAY_REQUIRED := 0x00000002
+version=1.7.8
+ontop=0
+;By default autoFlix is always on.
+on=1
+x1:=(a_screenwidth/2)-200
+y1:=(a_screenheight/2)-200
+;using VirtualWidth and height for multimonitor support.
+SysGet, VirtualWidth, 78
+SysGet, VirtualHeight, 79
+
+
+
+
+
+/*
+-------------------------------
+| User Settings             |
+-------------------------------
+*/      
 if not FileExist("autoFlix.ini")
 {
 	IniWrite, 0,autoFlix.ini,Settings, antisleep
@@ -20,63 +65,66 @@ if not FileExist("autoFlix.ini")
 }
 
 IniRead, antisleep, autoFlix.ini, Settings,antisleep
-
 IniRead, startup, autoFlix.ini, Settings,startup
 IniRead,custompng, autoFlix.ini, Settings,custompng
 
 
-ontop=0
-on=1
-#singleinstance force
-CoordMode, Pixel, Screen
-CoordMode, Mouse, Screen
-x1:=(a_screenwidth/2)-200
-y1:=(a_screenheight/2)-200
+/*
+-------------------------------
+| Included Files             |
+-------------------------------
+*/      
 fileinstall,logo.ico,logo.ico
 fileinstall,search.png,search.png
 
 
-;using VirtualWidth and height for multimonitor support.
-SysGet, VirtualWidth, 78
-SysGet, VirtualHeight, 79
-
-
+/*
+-------------------------------
+| Tray Menu                  |
+-------------------------------
+*/      
 menu, tray, NoStandard
 menu, tray, add, On, flixon
-
 menu, tray, Check, On
-
 menu, tray, add ; separator
 ;menu, tray, add, Always on top?, netcheck
 menu, tray, add, Settings, settings
 menu, tray, add ; separator
 menu,tray,add,Exit,cleanup
 
+
+/*
+-------------------------------
+| Timers                       |
+-------------------------------
+*/   
 settimer, autoflix, 1000
 settimer, CheckWindowsState, 30000
 return
 
 
 autoflix:
+	if not winexist("Netflix")
+		return
 	if !on
 	{
 		return
 	}
-
+	WinGetActiveStats, Netflix, net_w, net_h, net_x, net_y 
 	if fileexist("custom.png")
 	{
-		ImageSearch, foundx,foundy, 0, 0,VirtualWidth,VirtualHeight, custom.png
+		ImageSearch, foundx,foundy, net_x, net_y,net_w,net_h, custom.png
 	}
 	else
 	{
-		ImageSearch, foundx,foundy, 0, 0,VirtualWidth,VirtualHeight, search.png
+		ImageSearch, foundx,foundy, net_x, net_y,net_w,net_h, search.png
 	}
 	if !ErrorLevel
 	{
 		foundx:=foundx+10
 		foundy:=foundy+10
 		SystemCursor(off) 
-		MouseClick , , %FoundX%, %FoundY%
+		mouseclick , , %FoundX%, %FoundY%
 		mousemove,%VirtualWidth%, %FoundY%
 		SystemCursor(on) 
 		sleep 10000
@@ -141,6 +189,7 @@ Return
 
 
 settings:
+
 	gui, destroy
 	gui,color, b9090b
 	
@@ -170,15 +219,27 @@ settings:
 Return
 
 custompng:
-	msgbox Open Netflix and get to the end of an episode. (so the next button is showing). `n Click next when you are ready.
+
+	msgbox Open Netflix and get to the end of an episode. (so the next button is showing). `n Click ok when you are ready.
 	winactivate, Netflix
-	WinWaitActive Netflix
+	loop	
+	{
+		WinWaitActive Netflix,,5
+		if errorlevel
+		{
+			MsgBox, 4,, Could not find the nextflix window, would you like to continue waiting?
+			IfMsgBox Yes
+				continue
+			else
+				return
+		}
+		else
+			break
+	}
 	msgbox Click and drag around the outside of the next button. `nPress Escape at any time to cancel.
+	winmaximize, Netflix
 	WinWaitActive Netflix
 	sleep 500
-
-
-
 	file= temp.png
 	sc_CaptureScreen(0, false,file )
 	gui 99:default
@@ -270,12 +331,9 @@ EmptyMem(pid){
 
 
 cancel_screenshot:
-hotkey, esc, off
-
-
-
-gui 99: destroy
-filedelete, temp.png
+	hotkey, esc, off
+	gui 99: destroy
+	filedelete, temp.png
 return
 
 
@@ -283,7 +341,6 @@ return
 ;// Create partial window screenshot //
 TakeScreenshot:
 {
-	
 	arect = %SS_WinxPos% , %SS_WinyPos%, %winbottomx%, %winbottomy%
 	file= %A_ScriptDir%\custom.png
 	sc_CaptureScreen(arect, false,file )
@@ -296,17 +353,17 @@ Return
 
 SELECT_SCREENSHOT_AREA: 
 {
-hotkey, esc, on
+	hotkey, esc, on
 
-CoordMode, Mouse ,Screen
-  MouseGetPos, MX, MY
+	CoordMode, Mouse ,Screen
+	MouseGetPos, MX, MY
 
-  Gui, 5:Color, EEAA99
-  Gui, 5:+Lastfound
-  WinSet, TransColor, EEAA99
-  Gui, 5:-Caption +Border
+	Gui, 5:Color, EEAA99
+	Gui, 5:+Lastfound
+	WinSet, TransColor, EEAA99
+	Gui, 5:-Caption +Border
 
-  Loop
+	Loop
     {
 		if GetKeyState("esc", "P")
 		{
@@ -331,15 +388,15 @@ CoordMode, Mouse ,Screen
       Else
           Break
     }
-  MouseGetPos, MXend, MYend
-  Gui, 5:Destroy
+	MouseGetPos, MXend, MYend
+	Gui, 5:Destroy
 
-  SS_WinxPos=%MX%
-  SS_WinyPos=%MY%
-  winbottomy=%MYend%
-  winbottomx=%MXend%
-  hotkey, lbutton, off
-gosub TakeScreenshot
+	SS_WinxPos=%MX%
+	SS_WinyPos=%MY%
+	winbottomy=%MYend%
+	winbottomx=%MXend%
+	hotkey, lbutton, off
+	gosub TakeScreenshot
 } 
 Return
 
