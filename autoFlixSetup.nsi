@@ -112,10 +112,11 @@ Section "Uninstall"
 
   ;ADD YOUR OWN FILES HERE...
 Delete "$INSTDIR\autoFlix.exe"
-  Delete "$INSTDIR\Uninstall.exe"
+Delete "$INSTDIR\Uninstall.exe"
 Delete "$INSTDIR\logo.ico"
 Delete "$INSTDIR\search.png"
 Delete "$INSTDIR\autoflix.png"
+Delete "$INSTDIR\custom.png"
 Delete "$INSTDIR\autoFlix.ini"
 	
   RMDir "$INSTDIR"

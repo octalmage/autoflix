@@ -62,6 +62,7 @@ if not FileExist("autoFlix.ini")
 	IniWrite, 0,autoFlix.ini,Settings, antisleep
     IniWrite, 0,autoFlix.ini,Settings, startup
 	IniWrite, 0,autoFlix.ini,Settings, custompng
+	gosub thanks
 }
 
 IniRead, antisleep, autoFlix.ini, Settings,antisleep
@@ -102,6 +103,26 @@ settimer, autoflix, 1000
 settimer, CheckWindowsState, 30000
 return
 
+Thanks:
+gui 60: default
+gui,add,text,,Thank you for installing and using autoFlix.
+gui,add,text,,If autoFlix isn't working immediately, please try the Custom Image button located in the settings menu.
+gui,add,text,cBlue gsettings, Launch settings menu
+gui,add,text,, If you find any bugs`, or have any feature requests please visit the link below. 
+gui,add,text,cBlue gwebsite, http://code.google.com/p/autoflix/
+gui,add,button,gintrobegone,Thanks!
+gui,show,xcenter ycenter,Introduction
+gui 1: default
+return
+
+introbegone:
+gui 60:destroy
+return
+
+website:
+run http://code.google.com/p/autoflix/
+
+return
 
 autoflix:
 	if not winexist("Netflix")
