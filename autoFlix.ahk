@@ -2,10 +2,12 @@ SetWorkingDir, %A_ScriptDir%
 SetTitleMatchMode, 2
 
 PID := DllCall("GetCurrentProcessId")
-
+settitlematchmode, 2
 
 hotkey, lbutton, SELECT_SCREENSHOT_AREA
 hotkey, lbutton, off
+hotkey, esc, cancel_screenshot
+hotkey, esc, off
 ES_DISPLAY_REQUIRED := 0x00000002
 ;SetTimer, CheckWindowsState, % 1000*30 ; Poll every 30 seconds
 
@@ -50,7 +52,7 @@ menu, tray, add, Settings, settings
 menu, tray, add ; separator
 menu,tray,add,Exit,cleanup
 
-settimer, autoflix, 5000
+settimer, autoflix, 1000
 settimer, CheckWindowsState, 30000
 return
 
@@ -61,7 +63,7 @@ autoflix:
 		return
 	}
 
-	if custompng
+	if fileexist("custom.png")
 	{
 		ImageSearch, foundx,foundy, 0, 0,VirtualWidth,VirtualHeight, custom.png
 	}
@@ -167,7 +169,21 @@ Return
 
 custompng:
 	msgbox Open Netflix and get to the end of an episode. (so the next button is showing). `n Click next when you are ready.
-	msgbox Click and drag around the outside of the next button. Make sure its light grey and not dark grey.
+	winactivate, Netflix
+	WinWaitActive Netflix
+	msgbox Click and drag around the outside of the next button. `nPress Escape at any time to cancel.
+	WinWaitActive Netflix
+	sleep 500
+
+
+
+	file= temp.png
+	sc_CaptureScreen(0, false,file )
+	gui 99:default
+	gui -caption +toolwindow
+	gui, add, picture, x0 y0, temp.png
+	gui, show, x0 y0 w%a_screenwidth% h%a_screenheight%
+	gui 1: default
 	hotkey, lbutton, on
 return
 
@@ -251,16 +267,26 @@ EmptyMem(pid){
 
 
 
+cancel_screenshot:
+hotkey, esc, off
 
+
+
+gui 99: destroy
+filedelete, temp.png
+return
 
 
 
 ;// Create partial window screenshot //
 TakeScreenshot:
 {
+	
 	arect = %SS_WinxPos% , %SS_WinyPos%, %winbottomx%, %winbottomy%
 	file= %A_ScriptDir%\custom.png
 	sc_CaptureScreen(arect, false,file )
+	gui 99: destroy
+	filedelete, temp.png
 	msgbox Image Saved!
 }
 Return
@@ -268,6 +294,8 @@ Return
 
 SELECT_SCREENSHOT_AREA: 
 {
+hotkey, esc, on
+
 CoordMode, Mouse ,Screen
   MouseGetPos, MX, MY
 
@@ -278,7 +306,12 @@ CoordMode, Mouse ,Screen
 
   Loop
     {
-      If GetKeyState("LButton", "P")
+		if GetKeyState("esc", "P")
+		{
+			gosub cancel_screenshot
+			return
+		}
+		else If GetKeyState("LButton", "P")
         {
           MouseGetPos, MXend, MYend
           w := abs(MX - MXend)
