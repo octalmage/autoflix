@@ -38,7 +38,7 @@ hotkey, esc, off
 -------------------------------
 */      
 ES_DISPLAY_REQUIRED := 0x00000002
-version=1.7.8
+version=1.7.9
 ontop=0
 ;By default autoFlix is always on.
 on=1
@@ -83,7 +83,11 @@ fileinstall,search.png,search.png
 -------------------------------
 | Tray Menu                  |
 -------------------------------
-*/      
+*/    
+;autoFlix requires higher privileges on Vista and 7 to save the custom image. This was added to support Compile_AHK II 
+;http://www.autohotkey.com/forum/viewtopic.php?t=22975
+if A_IsCompiled
+  Menu, Tray, Icon, %A_ScriptFullPath%, -159
 menu, tray, NoStandard
 menu, tray, add, On, flixon
 menu, tray, Check, On
@@ -248,7 +252,7 @@ custompng:
 		WinWaitActive Netflix,,5
 		if errorlevel
 		{
-			MsgBox, 4,, Could not find the nextflix window, would you like to continue waiting?
+			MsgBox, 4,, Could not find the Netflix window, would you like to continue waiting?
 			IfMsgBox Yes
 				continue
 			else

@@ -16,7 +16,7 @@ RequestExecutionLevel admin
 
   ;Name and file
   Name "autoFlix"
-  OutFile "autoFlixSetup1.7.8.exe"
+  OutFile "autoFlixSetup1.7.9.exe"
 
   ;Default installation folder
   InstallDir "$PROGRAMFILES\autoFlix"
@@ -69,7 +69,7 @@ Section "Main" SecDummy
   File "search.png"
   ;Store installation folder
   WriteRegStr HKCU "Software\autoFlix" "" $INSTDIR
-WriteRegStr HKCU "Software\autoFlix" "version" "1.7.8"
+WriteRegStr HKCU "Software\autoFlix" "version" "1.7.9"
   
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
