@@ -1,0 +1,2 @@
+search.png
+	1280x960
