@@ -67,9 +67,10 @@ Section "Main" SecDummy
   File "autoFlix.exe"
   File "autoflix.png"
   File "search.png"
+  File "season.png"
   ;Store installation folder
   WriteRegStr HKCU "Software\autoFlix" "" $INSTDIR
-WriteRegStr HKCU "Software\autoFlix" "version" "1.7.9"
+WriteRegStr HKCU "Software\autoFlix" "version" "1.8"
   
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"

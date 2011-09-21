@@ -75,9 +75,11 @@ IniRead,custompng, autoFlix.ini, Settings,custompng
 | Included Files             |
 -------------------------------
 */      
-fileinstall,logo.ico,logo.ico
-fileinstall,search.png,search.png
+fileinstall, autoflix.png ,autoflix.png
+fileinstall, logo.ico ,logo.ico
 
+fileinstall, search.png ,search.png
+fileinstall, season.png ,season.png
 
 /*
 -------------------------------
@@ -144,6 +146,14 @@ autoflix:
 	{
 		ImageSearch, foundx,foundy, net_x, net_y,net_w,net_h, search.png
 	}
+	
+	
+	if ErrorLevel
+	{
+		
+		ImageSearch, foundx,foundy, net_x, net_y,net_w,net_h, season.png
+	}
+	
 	if !ErrorLevel
 	{
 		foundx:=foundx+10
